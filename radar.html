@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Players Radar Chart</title>
+    <link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href="./css/fonts/fonts.css" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
+    integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+  </head>
+  <body>
+      <nav class="nav-icons">
+          <a href="index.html" class="menu-green"><i class="fas fa-grip-lines-vertical"></i><span>Parallel
+                  Coordinates</span></a>
+                  <div class="logo"></div>
+          <a href="radar.html" class="menu-yellow"><i class="fas fa-dharmachakra"></i><span>Radar Chart</span></a>
+      </nav>
+      <hr>
+      <div class="container-flex">
+          <div class="row">
+              <!-- Informacije o prvom igraču-->
+              <div id="player1info" class="column column-4">
+                  <h1 id="player1name"></h1>
+                  <img id="player1Image" />
+                  <div id="player1data"></div>
+                  <div class="searchBox">
+                      <p class="searchLabel">SEARCH:</p>
+                      <div class="row">
+                          <input list="player1Datalist" name="player1Search" id="player1Input" class="column">
+                          <datalist id="player1Datalist"></datalist>
+                          <a class="butn column" id="player1SearchButton">DISPLAY</a>
+                      </div>
+                  </div>
+              </div>
+              <!-- Radarski graf -->
+              <div class="radarChart column column-6"><div  id="tooltip"></div></div>
+              <!-- Informacije o drugom igraču -->
+              <div id="player2info" class="column column-4">
+                  <h1 id="player2name"></h1>
+                  <img id="player2Image" />
+                  <div id="player2data"></div>
+                  <p class="searchLabel">SEARCH:</p>
+                  <div class="row">
+                      <input list="player2Datalist" name="player2Search" id="player2Input" class="column">
+                      <datalist id="player2Datalist"></datalist>
+                      <a class="butn column" id="player2SearchButton">DISPLAY</a>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div class="button-container">
+        <button class="player-type-button" id="goalkeeperButton">Golmani</button>
+        <button class="player-type-button" id="playerButton">Igrači</button>
+    </div>
+
+      <footer class="legend"></footer>
+      <div class="overlay"></div>
+
+<script>
+    // JavaScript kod za funkcionalnost
+</script>
+
+<link href="./css/radar.css" rel="stylesheet" type="text/css">
+<link href="./css/style.css" rel="stylesheet" type="text/css">
+<script src="./scripts/nav.js"></script>
+<style>
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+  }
+
+  .player-type-button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      background-color:#8d8c8c;
+      color: rgb(0, 0, 0);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+  }
+  .player-type-button:hover {
+    background-color:#ffffff;
+    color: rgb(0, 0, 0);
+  }
+</style>
+
+    <script src="./scripts/barchart.js"></script>
+    <script src="./scripts/libs/radarchart.js"></script>
+    <script src="./scripts/radar.js"></script>
+<script>
+  // Dohvaćanje ID-ja iz URL-a
+  const urlParams = new URLSearchParams(window.location.search);
+  var playerId = urlParams.get('sofifa_id');
+
+  // Podaci koji će se proslijediti RadarChart funkciji
+  var pokeData = [[], []];
+
+  //Ako ne postoji ID, postave se placeholder slike za svakog igrača
+  if (!playerId) {
+    d3.select("#player1Image")
+      .attr("src", "./assets/soccerPlayer.png")
+      .style("height", "150px")
+      .style("width", "150px");
+    d3.select("#player2Image")
+      .attr("src", "./assets/soccerPlayer.png")
+      .style("height", "150px")
+      .style("width", "150px");
+  }
+
+  // Dohvaćanje gumbova i polja za pretragu
+  var player1input = document.querySelector('#player1Input');
+  var player1SearchButton = document.querySelector("#player1SearchButton");
+
+  var player2input = document.querySelector('#player2Input');
+  var player2SearchButton = document.querySelector("#player2SearchButton");
+
+  var goalkeeperButton = document.querySelector("#goalkeeperButton");
+  var playerButton = document.querySelector("#playerButton");
+
+  // Varijabla za praćenje odabira kategorije (golman ili igrač)
+  var selectedCategory = "player";
+
+  d3.json("./python/filtered_players.json", function (error, data) {
+    // Ako u polju za pretragu za drugog igrača ne postoji vrijednost, postavi se placeholder slika
+    if (!player2input.value) {
+      d3.select("#player2Image")
+        .attr("src", "./assets/soccerPlayer.png")
+        .style("height", "150px")
+        .style("width", "150px");
+    }
+
+    // Popunjavanje vrijednosti datalist elementa svim imenima igrača iz skupa podataka
+    function populatePlayerOptions(data) {
+      var filteredData;
+      if (selectedCategory === "goalkeeper") {
+        filteredData = data.filter(function (player) {
+          return player.player_positions.includes("GK");
+        });
+      } else {
+        filteredData = data.filter(function (player) {
+          return !player.player_positions.includes("GK");
+        });
+      }
+
+      d3.select("#player1Datalist")
+        .selectAll("option")
+        .data(filteredData)
+        .enter()
+        .append("option")
+        .attr("value", function (d) {
+          return d.short_name;
+        });
+
+      d3.select("#player2Datalist")
+        .selectAll("option")
+        .data(filteredData)
+        .enter()
+        .append("option")
+        .attr("value", function (d) {
+          return d.short_name;
+        });
+    }
+
+    populatePlayerOptions(data);
+
+    // Pronalaženje igrača po imenu u novom formatu JSON podataka
+    function findPlayerByName(name, data) {
+      return data.find(function (player) {
+        if (selectedCategory === "goalkeeper") {
+          return player.short_name === name && player.player_positions.includes("GK");
+        } else {
+          return player.short_name === name && !player.player_positions.includes("GK");
+        }
+      });
+    }
+
+    // Pomoćna funkcija za resetiranje vrijednosti input polja
+    function resetPlayerInput(playerInput) {
+      player1input.value = "";
+      player2input.value = "";
+    }
+
+    // Pomoćna funkcija za resetiranje odabranog igrača
+    function resetSelectedPlayer() {
+      playerId = null;
+      d3.select("#player1Image")
+        .attr("src", "./assets/soccerPlayer.png")
+        .style("height", "150px")
+        .style("width", "150px");
+      d3.select("#player2Image")
+        .attr("src", "./assets/soccerPlayer.png")
+        .style("height", "150px")
+        .style("width", "150px");
+    }
+
+    // Resetira prethodno odabrane igrače za usporedbu
+    function resetSelectedPlayers() {
+      resetSelectedPlayer();
+      resetPlayerInput(player1input);
+      resetPlayerInput(player2input);
+    }
+
+    // Kada se klikne na gumb, odabire se kategorija golmana
+    goalkeeperButton.addEventListener("click", function () {
+      selectedCategory = "goalkeeper";
+      resetSelectedPlayers();
+      d3.select("#player1Datalist").selectAll("option").remove();
+      d3.select("#player2Datalist").selectAll("option").remove();
+      populatePlayerOptions(data);
+    });
+
+    // Kada se klikne na gumb, odabire se kategorija igrača
+    playerButton.addEventListener("click", function () {
+      selectedCategory = "player";
+      resetSelectedPlayers();
+      d3.select("#player1Datalist").selectAll("option").remove();
+      d3.select("#player2Datalist").selectAll("option").remove();
+      populatePlayerOptions(data);
+    });
+
+    // Kada se klikne na button, dohvati se ID igrača pomoću upisanog imena i iscrtaju
+    // se svi elementi za tog igrača
+    player1SearchButton.addEventListener("click", function () {
+      var playerName = player1input.value;
+      var player = findPlayerByName(playerName, data);
+      if (player) {
+        playerId = player.sofifa_id;
+        drawAll(data, playerId, 1);
+      } else {
+        resetSelectedPlayer();
+      }
+    });
+
+    player2SearchButton.addEventListener("click", function () {
+      var playerName = player2input.value;
+      var player = findPlayerByName(playerName, data);
+      if (player) {
+        playerId = player.sofifa_id;
+        drawAll(data, playerId, 2);
+      } else {
+        resetSelectedPlayer();
+      }
+    });
+
+    // Ako postoji ID (dohvaćen iz URL-a), vizualiziraju se podaci za tog igrača
+    if (playerId) {
+      var player = data.find(function (player) {
+        return player.sofifa_id === playerId;
+      });
+      if (player) {
+        drawAll(data, playerId, 1);
+      }
+    }
+
+    
+    // Ako postoji ID (dohvaćen iz URL-a), vizualiziraju se podaci za tog igrača
+if (playerId) {
+  var player = data.find(function (player) {
+    return player.sofifa_id === playerId;
+  });
+
+  if (player) {
+    if (player.player_positions === "GK") {
+      selectedCategory = "goalkeeper";
+    } else {
+      selectedCategory = "player";
+    }
+
+    d3.select("#player1Datalist").selectAll("option").remove();
+    d3.select("#player2Datalist").selectAll("option").remove();
+    populatePlayerOptions(data);
+  }
+}
+
+  });
+
+</script>
+
+    
+    
+</body>
+
+</html>

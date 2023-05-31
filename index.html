@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
+    integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+
+  <link rel="stylesheet" type="text/css" href="./css/style.css">
+  <link rel="stylesheet" type="text/css" href="./css/parcoords.css">
+  <link rel="stylesheet" type="text/css" href="./css/checkbox.css">
+  <link rel="stylesheet" type="text/css" href="./css/fonts/fonts.css">
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="./scripts/libs/d3.parcoords.js"></script>
+  <script src="./scripts/libs/divgrid.js"></script>
+  <script src="./scripts/nav.js"></script>
+
+</head>
+
+<body>
+
+
+  <!-- NAVIGATION -->
+  <nav class="nav-icons">
+    <a href="index.html" class="menu-green"><i class="fas fa-grip-lines-vertical"></i><span>Parallel Coordinates</span></a>
+    <div class="logo"></div>
+    <a href="radar.html" class="menu-yellow"><i class="fas fa-dharmachakra"></i><span>Radar Chart</span></a>
+  </nav>
+
+
+
+
+  
+  <hr>
+  <!-- GRAF S PARALELNIM KOORDINATAMA -->
+  <div id="parallel-coords" class="parcoords"></div>
+  <!-- GUMBOVI ZA FILTRIRANJE OSI -->
+  <div id="filter">
+    <ul id="filterList"></ul>
+  </div>
+  <hr>
+  <!-- DIVGRID -->
+  <div class="container">
+    <div id="grid">
+      <div class="search_name">
+        <label class="search">Search by name:</label>
+        <input type="text" id="short_name" />
+      </div>
+    </div>
+  </div>
+  <div class="end"></div>
+</body>
+</html>
+
+  <script>
+    // Polja za filtriranje osi (nazivi osi u polju će biti skriveni)
+    var allVals = ["sofifa_id",
+                "short_name",
+                "age",
+                "league_name",
+                "league_rank",
+                "height_cm",
+                "nationality",
+                "club_name",
+                "overall",
+                "value_eur",
+                "player_positions",
+                "pace",
+                "shooting",
+                "passing",
+                "dribbling",
+                "defending",
+                "physic",
+                "gk_diving",
+                "gk_handling",
+                "gk_kicking",
+                "gk_reflexes",
+                "gk_speed",
+                "gk_positioning",
+                "attacking_finishing",
+                "attacking_short_passing",
+                "skill_ball_control",
+                "movement_acceleration",
+                "movement_sprint_speed",
+                "movement_reactions",
+                "movement_balance",
+                "power_long_shots"]
+
+              
+    var valsToShow = ["league_name","age","value_eur", "height_cm", "nationality", "overall"]
+
+    // Nazivi svih osi koje se mogu prikazati na grafu
+    var filterKeys = ["league_name","age","value_eur","height_cm", "nationality", "overall"]
+ 
+
+
+    var grid = d3.divgrid().columns(["short_name", "age","value_eur","height_cm", "nationality","league_name","club_name","overall"]);
+    var parcoords;
+
+    // Dodavanje li elemenata za checkboxove za odabir osi
+    d3.select("#filterList").attr("class", "cbox")
+    var unorderedList = d3.select("#filterList").selectAll("li").data(filterKeys).enter().append("li")
+
+    // Dodavanje li elementima inpute, te pripadajuće tipove, klase, id-jeve, vrijednosti i labele
+    unorderedList.each(function (d, i) {
+      d3.select(this)
+        .append("input")
+        .attr("type", "checkbox")
+        .attr("id", function (d) {
+          return `Checkbox${i}`
+        })
+        .attr("value", function (d) {
+          return d;
+        })
+        .property("checked", function (d) {
+          return valsToShow.includes(d);
+        })
+
+      d3.select(this)
+        .append("label")
+        .attr("for", function (d) {
+          return `Checkbox${i}`
+        })
+        .html(function (d) {
+          return d
+        })
+    })
+
+    // Odabir svih kreiranih checkboxova
+    var checkBoxes = d3.select("#filterList").selectAll("input")
+
+    d3.json('./python/filtered_players.json', function (error, data) {
+
+    
+      // Dodavanje listenera na svaki checkbox, da se na promjenu stanja pozove funkcija
+      // koja će ažurirati polja za filtriranje osi 
+      checkBoxes.on("change", function () {
+        cbUpdate(data);
+      });
+      // Prvotno iscrtavanja grafa
+      drawParCoords(data)
+    });
+
+    // Funkcija koja provjerava svaki checkbox, te u slučaju da os nije označena i već nije u polju,
+    // stavlja tu os u polje osi koje trebaju biti skrivene  ili u slučaju da je checkbox označen, miče naziv
+    // te osi iz polja osi koje se trebaju prikazati (dakle, označeni checkboxovi su osi koje 
+    // se prikazuju, neoznačeni osi koje se skrivaju). Nakon ažuriranja polja, ponovno se iscrtava graf
+    function cbUpdate(data) {
+      checkBoxes.each(function (d, i) {
+        if (d3.select(this).property("checked")) {
+          if (!valsToShow.includes(d)) {
+            valsToShow.push(d)
+          } 
+        } else {
+          for (var i = 0; i <valsToShow.length; i++) {
+            if (valsToShow[i] == d) {
+              valsToShow.splice(i, 1);
+            }
+          }
+        }
+      })
+      drawParCoords(data)
+    }
+
+    // Funkcija za iscrtavanje grafa
+    function drawParCoords(data) {
+      // U slučaju odabira nove osi ili nekog ažuriranje, potrebno je prvo ukloniti graf, a zatim
+      // ga ponovno nacrtati
+      if (d3.select("#parallel-coords")) {
+        d3.select("#parallel-coords").selectAll("*").remove();
+      }
+    
+      var colorgen = d3.scale.linear()
+        .domain([50, 100]) 
+        .range(["red", "green"]); 
+    
+      var color = function(d) { return colorgen(d.overall); };
+      var hideAxisVals = allVals.filter(x => !valsToShow.includes(x));
+    
+      // Iscrtavanje grafa na zadanom elementu sa podacima proslijeđenim funkciji.
+      // Osi koje se skrivaju ovise o duljini polja hideAxisVals (ako je duljina polja 1
+      // iscrtavaju se defaultne osi, inače sve osi koje se ne nalaze u polju hideAxisVals)
+    
+      // IZVORI: 
+      // http://bl.ocks.org/eesur/1a2514440351ec22f176
+      parcoords = d3.parcoords()("#parallel-coords")
+        .data(data)
+        .hideAxis(hideAxisVals)
+        .composite("darken")
+        .color(color)
+        .alpha(0.25)
+        .mode("queue")
+        .render()
+        .brushMode("1D-axes")
+        .reorderable();
+    
+      // Iscrtavanje tablice
+      drawGrid(data);
+    
+      // Ažuriranje tablice kad se označe elementi na grafu
+      parcoords.on("brush", function (d) {
+        drawGrid(d);
+      });
+    
+      // Ažuriranje tablice kada se upiše ime u polje za pretragu
+      d3.select("#short_name").on("input", function () {
+        drawGrid(data, this.value);
+      });
+    }
+    
+
+    // Funkcija za crtanje tablice
+    function drawGrid(data, text) {
+      // Odabir div-a u kojem će se crtati tablica, te podaci koji će se nalaziti u tablici
+      // U slučaju da postoji neki tekst, u tablici će se nalaziti svi igrači čije ime
+      // sadržava tekst u polju za pretragu. Ako tekst ne postoji, u tablici će se nalaziti
+      // prvih 20 podataka koji odgovaraju kriterijima.
+      // Svakom retku dodaje se mouseover listener koji će označiti taj podatak na grafu i pretvoriti
+      // izgled miša, mouseout listener koji će ukloniti efekt označavanja, te click listener
+      // koji će navigirati do druge vizualizacije zajedno s id-jem igrači kao query string
+
+      // IZVORI:
+      // https://gist.github.com/syntagmatic/3687826
+      // http://bl.ocks.org/eesur/1a2514440351ec22f176
+      d3.select("#grid")
+  .datum(text
+    ? data.filter(function (player) {
+        return player.short_name.toLowerCase().includes(text.toLowerCase());
+      })
+    : data)
+  .call(grid)
+  .selectAll(".row")
+  .on({
+    mouseover: function (d) {
+      parcoords.highlight([d]);
+      d3.select(this).style("cursor", "pointer");
+    },
+    mouseout: parcoords.unhighlight,
+    click: function (d) {
+      window.location.href = "radar.html" + "?sofifa_id=" + d.sofifa_id;
+    },
+  });
+  window.onload = function () {
+    var intro = document.querySelector(".intro");
+    var img = intro.querySelector("img");
+  
+    img.onload = function () {
+      setTimeout(function () {
+        img.style.opacity = "1";
+        setTimeout(function () {
+          intro.style.display = "none";
+        }, 4000); // trajanje animacije u milisekundama
+      }, 1000); // vrijeme čekanja prije animacije u milisekundama
+    };
+  };
+  
+    }
+  </script>
+</body>

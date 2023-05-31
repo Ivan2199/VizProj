@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
+
+#player1info,
+#player2info {
+    padding-bottom: 30px;
+}
+
+
+#player1info {
+    background-color: rgb(182, 26, 26);
+}
+
+#player2info {
+    background-color: #6fad5e;
+}
+
+#player1name,
+#player2name {
+    font-size: 2.5em;
+    font-family: 'PokefontSolid';
+    color: #0a0a09;
+    letter-spacing: 4px;
+    background-color: rgb(250, 120, 120);
+    border: 1px solid rgb(161, 31, 31);
+    border-radius: 50%;
+    margin: 10px 0;
+}
+
+#player2name {
+    background-color: #b3d4ab;
+    border: 1px solid #000000;
+}
+#player1name {
+    background-color: #d4abab;
+    border: 1px solid #000000;
+}
+
+#player1data {
+    margin-top: 10px;
+    background-color: rgb(250, 120, 120);
+    border: 1px solid #000000;
+    border-radius: 10%;
+}
+
+#player2data {
+    margin-top: 10px;
+    background-color: #b3d4ab;
+    border: 1px solid #000000;
+    border-radius: 10%;
+}
+
+#player1Input,
+#player2Input {
+    margin-top: 14px;
+    width: 160px;
+    height: 30px;
+    font-size: 14pt;
+    margin-right: 8px;
+    
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 -12px;
+}
+
+.column {
+    padding: 0 12px;
+    text-align: center;
+}
+
+.column-4 {
+    border: 3px solid #e6ad00;
+    border-radius: 5%;
+    flex: 0 0 23%;
+    margin: 0 10px 0 10px;
+    
+}
+
+.column-6 {
+    flex: 0 0 50%;
+}
+
+.legend {
+    font-family: 'Raleway', sans-serif;
+    fill: #fff200;
+
+}
+
+.legend tspan {
+    font-size: 1.1em;
+}
+
+text.axisLabel {
+    font-size: 5.5px;
+    fill: rgb(251, 255, 0);
+    font-weight:900;
+}
+
+.tooltip {
+    fill: #ffffff;
+    font-size: 25px;
+    font-weight: 900;
+}
+
+g.y.axis,
+text.label {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.2em;
+    fill: #000000;
+}
+
+g.y.axis {
+    padding-right: 8px;
+}
+
+.butn {
+    margin: 10px 0;
+    cursor: pointer;
+    -webkit-border-radius: 28;
+    -moz-border-radius: 28;
+    border-radius: 28px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #ffffff;
+    font-size: 20px;
+    padding: 10px 20px 10px 20px;
+    text-decoration: none;
+    border: 1px solid #666;
+}
+
+#player1SearchButton {
+    background: #6fad5e;
+}
+
+#player1SearchButton:hover {
+    background: #7db56e;
+    text-decoration: none;
+}
+
+#player2SearchButton {
+    background: #ff0000;
+}
+
+#player2SearchButton:hover {
+    background: #ff2525;
+    text-decoration: none;
+}
+
+.searchLabel {
+    margin: 10px 0 10px 0;
+    font-size: 4em;
+    font-family: 'PokefontSolid';
+    letter-spacing: 3px;
+}
+
+/* Stilizacija legende */
+footer.legend {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #333; /* Tamna pozadina */
+    color: #fff; /* Boja teksta */
+    padding: 20px;
+  }
+  
+  footer.legend div {
+    margin-right: 20px;
+    font-size: 14px;
+  }
+  
+  footer.legend div:last-child {
+    margin-right: 0;
+  }
+  
+  footer.legend div::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: #fff; /* Boja kvadratića */
+    margin-right: 5px;
+  }
+  footer.legend div.active {
+    font-weight: bold;
+  }
+  
+  #tooltip {
+    position: absolute;
+    color: #333;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+  }
+  
+  
+  
+  
